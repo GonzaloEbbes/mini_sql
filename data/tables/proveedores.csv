@@ -1,0 +1,41 @@
+﻿ID_Proveedor,Nombre_Proveedor,Teléfono,Correo_Electronico,Dirección
+1,TechSupply,1234567890,support@techsupply.com,Calle Comercio 100
+2,HomeAppliances,0987654321,contact@homeappliances.com,Avenida Central 200
+3,ElectroMart,2345678901,info@electromart.com,Calle Mayor 300
+4,GlobalElectronics,3456789012,service@globalelectronics.com,Avenida del Sol 400
+5,PrimeGadgets,4567890123,help@primegadgets.com,Calle de la Luna 500
+6,SuperTech,5678901234,support@supertech.com,Avenida de la Paz 600
+7,ElectroWorld,6789012345,info@electroworld.com,Calle del Viento 700
+8,HomeGear,7890123456,contact@homegear.com,Avenida de la Estrella 800
+9,TechCentral,8901234567,service@techcentral.com,Calle de los Pinos 900
+10,SmartSupplies,9012345678,help@smartsupplies.com,Avenida del Valle 1000
+11,BestElectronics,1122334455,support@bestelectronics.com,Calle del Sol 1100
+12,HomeElectro,2233445566,info@homeelectro.com,Avenida de la Luna 1200
+13,TechMasters,3344556677,service@techmasters.com,Calle de la Brisa 1300
+14,ElectroPlus,4455667788,contact@electroplus.com,Avenida del Mar 1400
+15,PrimeElectronics,5566778899,help@primeelectronics.com,Calle de la Estrella 1500
+16,GlobalSupplies,6677889900,info@globalsupplies.com,Avenida del Cielo 1600
+17,TechieStore,7788990011,support@techiestore.com,Calle del Horizonte 1700
+18,ElectroShop,8899001122,service@electroshop.com,Avenida de los Cedros 1800
+19,HomeSmart,9900112233,contact@homesmart.com,Calle del Jardín 1900
+20,TopElectronics,1011122334,info@topelectronics.com,Avenida del Campo 2000
+21,TechOutlet,2122233445,support@techoutlet.com,Calle del Río 2100
+22,SmartGadgets,3233344556,service@smartgadgets.com,Avenida del Horizonte 2200
+23,ElectroCenter,4345455667,info@electrocenter.com,Calle de la Luna 2300
+24,HomeTech,5456566778,contact@hometech.com,Avenida de la Esperanza 2400
+25,ElectroWorld,6567677889,support@electroworld.com,Calle de los Pinos 2500
+26,PrimeGadgets,7678788990,service@primegadgets.com,Avenida del Sol 2600
+27,TechnoShop,8789899001,info@technoshop.com,Calle del Viento 2700
+28,GlobalTech,9899900112,contact@globaltech.com,Avenida de la Luna 2800
+29,ElectroLink,9900112233,support@electrolink.com,Calle de la Paz 2900
+30,TechCentral,1011122334,service@techcentral.com,Avenida del Jardín 3000
+31,SmartSupplies,2122233445,info@smartsupplies.com,Calle del Mar 3100
+32,BestGadgets,3233344556,contact@bestgadgets.com,Avenida del Campo 3200
+33,TechMasters,4345455667,support@techmasters.com,Calle del Viento 3300
+34,ElectroMart,5456566778,service@electromart.com,Avenida del Sol 3400
+35,HomeElectro,6567677889,info@homeelectro.com,Calle de la Estrella 3500
+36,PrimeTech,7678788990,contact@primetech.com,Avenida de los Pinos 3600
+37,GlobalElectro,8789899001,support@globalelectro.com,Calle del Río 3700
+38,ElectroLink,9899900112,service@electrolink.com,Avenida de la Luna 3800
+39,SmartTech,9900112233,info@smarttech.com,Calle del Horizonte 3900
+40,TechGadgets,1011122334,contact@techgadgets.com,Avenida del Campo 4000

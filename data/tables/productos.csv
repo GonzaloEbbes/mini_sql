@@ -1,0 +1,42 @@
+ID_Producto,Nombre_Producto,Categoría,Precio,Stock
+1,Laptop,Electrónica,899.99,50
+2,Smartphone,Electrónica,499.99,150
+3,Televisor,Electrónica,699.99,30
+4,Tablet,Electrónica,299.99,100
+5,Monitor,Electrónica,199.99,75
+6,Teclado,Electrónica,49.99,200
+7,Ratón,Electrónica,29.99,250
+8,Impresora,Electrónica,149.99,60
+9,Altavoces,Electrónica,89.99,85
+10,Cámara,Electrónica,499.99,40
+11,Refrigerador,Electrodomésticos,799.99,20
+12,Microondas,Electrodomésticos,119.99,90
+13,Lavadora,Electrodomésticos,599.99,25
+14,Secadora,Electrodomésticos,699.99,15
+15,Estufa,Electrodomésticos,299.99,45
+16,Plancha,Electrodomésticos,39.99,120
+17,Freidora,Electrodomésticos,79.99,70
+18,Robot_Aspiradora,Electrodomésticos,249.99,35
+19,Extractor_Jugo,Electrodomésticos,89.99,80
+20,Calentador,Electrodomésticos,129.99,50
+21,Chaqueta,Ropa,59.99,120
+22,Camiseta,ropa,19.99,200
+23,Pantalones,ropa,39.99,150
+24,Zapatos,ropa,79.99,90
+25,Sombrero,ropa,14.99,180
+26,Botas,ropa,89.99,70
+27,Guantes,ropa,24.99,140
+28,Bufanda,ropa,29.99,110
+29,Chaqueta_Lluvia,ropa,49.99,95
+30,Chaqueta_De_Lana,ropa,69.99,85
+31,Teléfono,Electrónica,249.99,130
+32,Smartwatch,Electrónica,199.99,100
+33,Parlante_Bluetooth,Electrónica,79.99,140
+34,Disco_Duro,Electrónica,129.99,65
+35,Cargador,Electrónica,19.99,300
+36,HDMI_Cable,Electrónica,9.99,400
+37,Estante, muebles,149.99,50
+38,Silla, muebles,89.99,70
+39,Escritorio, muebles,199.99,40
+40,Armario, muebles,299.99,25
+

@@ -14,7 +14,6 @@ fn duplicate_file(original_path: &str,  new_path: &str) -> io::Result<()> {
 
 #[cfg(test)]
 mod tests_select {
-    use crate::{duplicate_file,  CLIENTES_DIR};
 
     #[test]
     fn test_select_missing_from() {
@@ -117,12 +116,13 @@ mod tests_select {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
 
-        println!("{:?}", stderr);
+        
         
         assert_eq!(stdout,  expected.concat());
         assert!(stderr.is_empty());
     }
 
+    /*
     #[test]  
     fn test_select_some_fields() {
         let expected: Vec<&str> = vec![
@@ -148,12 +148,89 @@ mod tests_select {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
 
-        println!("{:?}", stderr);
+        
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
+    */
+
+    #[test]  
+    fn test_select_some_fields_where_and() {
+        let expected: Vec<&str> = vec![
+            "103, javier@email.com\n",  
+        ]; 
+
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT email, id_cliente FROM clientes WHERE apellido = 'diaz' AND id_cliente < 105")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        
         
         assert_eq!(stdout,  expected.concat());
         assert!(stderr.is_empty());
     }
 
-    
+    #[test]  
+    fn test_select_some_fields_where_or() {
+        let expected: Vec<&str> = vec![
+            "101, mario@email.com\n", 
+            "102, laura@email.com\n", 
+            "103, javier@email.com\n",  
+            "104, carla@email.com\n", 
+            "105, andres@email.com\n", 
+            "109, rafael@email.com\n",  
+        ]; 
 
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT email, id_cliente FROM clientes WHERE apellido = 'diaz' OR id_cliente <= 105")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
+
+    #[test]  
+    fn test_select_all_fields_where_not() {
+        let expected: Vec<&str> = vec![
+            "101, mario, hernandez, mario@email.com, 5551234567\n", 
+            "102, laura, ortega, laura@email.com, 5559876543\n", 
+            "103, javier, diaz, javier@email.com, 5551122334\n", 
+            "105, andres, ruiz, andres@email.com, 5552233445\n", 
+            "106, lucia, garcia, lucia@email.com, 5553344556\n", 
+            "107, fernando, moreno, fernando@email.com, 5554455667\n", 
+            "108, sofia, gonzalez, sofia@email.com, 5555566778\n", 
+            "109, rafael, diaz, rafael@email.com, 5556677881\n", 
+            "110, paula, vera, paula@email.com, 5557788992\n"
+        ]; 
+
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT * FROM clientes WHERE NOT email = 'carla@email.com'")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
+}
+
+mod test_update {
+    use crate::{duplicate_file,  CLIENTES_DIR};
 }

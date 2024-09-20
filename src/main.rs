@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::env;
-use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::vec;
 mod errors;
+use sentences::common::{get_headers, add_all_fields, validate_table, format_to_csv, get_required_fields};
 use crate::errors::apperrors::MiniSQLError;
 pub mod sentences;
 pub mod file;
@@ -37,7 +37,7 @@ fn execute_query(route: String, sentence: String) -> Result<(), MiniSQLError> {
     if let Some(sentence_type) = sententence_vec.first() {
         match sentence_type.to_uppercase().as_str() {
             "SELECT" => execute_select_statement(sententence_vec, &route),
-            "DELETE" => execute_delete_statement(sententence_vec, &route),
+            "DELETE" => sentences::delete::execute_delete_statement(sententence_vec, &route),
             "INSERT" => execute_insert_statement(sententence_vec, &route),
             "UPDATE" => execute_update_statement(sententence_vec, &route),
             _ => Err(MiniSQLError::InvalidSyntax(format!(
@@ -79,83 +79,7 @@ fn standardize_sentence(sentence: String) -> Vec<String> {
 }
 
 
-fn get_headers(mut file_iter: BufReader<File>) -> (BufReader<File>, Vec<String>) {
-    let mut buffer: String = String::new();
-    let _ = file_iter.read_line(&mut buffer);
-    (file_iter, format_to_csv(buffer.replace("\n", "")))
-}
 
-fn format_to_csv(buffer: String) -> Vec<String> {
-    let vec: Vec<String> = buffer.split(",").map(|s| s.to_string()).collect();
-    vec
-}
-
-fn get_required_fields(
-    query_fields: &[String],
-    headers: &[String],
-) -> Result<HashMap<String, usize>, MiniSQLError> {
-    if query_fields.len() == 1 && query_fields[0] == "*" {
-        let all_fields: HashMap<String, usize> = add_all_fields(headers);
-        return Ok(all_fields);
-    }
-
-    let mut indexes: HashMap<String, usize> = HashMap::new();
-    for field in query_fields {
-        if field == "(" || field == ")" || field == "," {
-            continue;
-        }
-        let mut index = 0;
-        let mut found = false;
-        for csv_header in headers {
-            if field == csv_header {
-                indexes.insert(field.clone(), index);
-                found = true;
-                continue;
-            }
-            index += 1;
-        }
-        if !found {
-            return Err(MiniSQLError::InvalidColumn(format!(
-                "requested field [ {} ] could not be found",
-                field
-            )));
-        }
-    }
-
-    Ok(indexes)
-}
-
-fn add_all_fields(headers: &[String]) -> HashMap<String, usize> {
-    let mut indexes: HashMap<String, usize> = HashMap::new();
-    for (index, row) in headers.iter().enumerate() {
-        if index == headers.len()-1{
-            indexes.insert(row.to_string().replace("\n", ""), index);
-        }else{
-            indexes.insert(row.to_string(), index);
-        }
-    }
-
-    indexes
-}
-
-fn validate_table(mut from: Vec<String>) -> Result<String, MiniSQLError> {
-    let table = if let Some(first) = from.pop() {
-        first
-    } else {
-        return Err(MiniSQLError::InvalidTable(
-            "no table was given ".to_string(),
-        ));
-    };
-
-    if !from.is_empty() {
-        from.push(table);
-        return Err(MiniSQLError::InvalidTable(format!(
-            "multiple references for table: {} ",
-            from.join(" ")
-        )));
-    }
-    Ok(table)
-}
 
 
 /// Contains all requiered data to execute a SELECT statement give row values
@@ -325,7 +249,7 @@ fn apply_select_to_file(
     for result in file_iter.lines() {
         let record = result?;
         let line = format_to_csv(record);
-        let should_apply = sentences::common::get_query(
+        let should_apply = sentences::conditions::get_query(
             &select.condition,
             0,
             select.condition.len(),
@@ -625,7 +549,7 @@ fn execute_update(
     for result in file_iter.lines() {
         let record = result?;
         let mut line = format_to_csv(record);
-        let should_apply = sentences::common::get_query(
+        let should_apply = sentences::conditions::get_query(
             &sentence.condition,
             0,
             sentence.condition.len(),
@@ -879,108 +803,4 @@ fn format_new_line(
     Ok(base_line)
 }
 
-
-
-struct Delete {
-    target_table: String,
-    condition: Vec<String>,
-}
-
-fn new_delete(sentence_parts: Vec<String>) -> Result<Delete, MiniSQLError> {
-    let (condition, table) = decode_delete(sentence_parts)?;
-    Ok(Delete {
-        target_table: table,
-        condition,
-    })
-}
-
-fn execute_delete_statement(
-    sententence_vec: Vec<String>,
-    route: &String,
-) -> Result<(), MiniSQLError> {
-    let delete = new_delete(sententence_vec)?;
-    let file_iter = file::handler::new_file_iterator(route, &delete.target_table)?;
-
-    execute_delete(&delete, file_iter, route)?;
-    Ok(())
-}
-
-fn decode_delete(sentence_parts: Vec<String>) -> Result<(Vec<String>, String), MiniSQLError> {
-    let mut condition: Vec<String> = Vec::new();
-    let mut from: Vec<String> = Vec::new();
-
-    (condition, from) = match_fields_delete(sentence_parts, condition, from)?;
-
-    let table = validate_table(from)?;
-
-    Ok((condition, table))
-}
-
-fn match_fields_delete(
-    sentence_parts: Vec<String>,
-    mut condition: Vec<String>,
-    mut from: Vec<String>,
-) -> Result<(Vec<String>, Vec<String>), MiniSQLError> {
-    let mut base = "";
-    for part in &sentence_parts {
-        match part.as_str() {
-            "DELETE" => {
-                base = "";
-                continue;
-            }
-            "FROM" => {
-                base = "from";
-                continue;
-            }
-            "WHERE" => {
-                base = "condition";
-                continue;
-            }
-            _ => (),
-        }
-
-        match base {
-            "condition" => condition.push(part.to_string()),
-            "from" => from.push(part.to_string()),
-            _ => {
-                return Err(MiniSQLError::InvalidSyntax(format!(
-                    "Invalid sentence: {} ",
-                    sentence_parts.join(" ")
-                )))
-            }
-        }
-    }
-    Ok((condition, from))
-}
-
-fn execute_delete(
-    sentence: &Delete,
-    file_iter: BufReader<File>,
-    file_path: &String,
-) -> Result<(), MiniSQLError> {
-    let (file_iter, headers) = get_headers(file_iter);
-    let mapped_fields = add_all_fields(&headers);
-    let mut new_file = file::handler::create_file(file_path, &sentence.target_table)?;
-
-    let headers = headers.join(",").replace("\n", "");
-    writeln!(new_file, "{}", headers)?;
-    for result in file_iter.lines() {
-        let record = result?;
-        let line = format_to_csv(record);
-        let should_apply = sentences::common::get_query(
-            &sentence.condition,
-            0,
-            sentence.condition.len(),
-            &mapped_fields,
-            &line,
-        )?;
-        if !should_apply {
-            let csv_line = line.join(",").replace("\n", "");
-            writeln!(new_file, "{}", csv_line)?;
-        }
-    }
-    file::handler::rename_file(file_path, &sentence.target_table)?;
-
-    Ok(())
-}
 

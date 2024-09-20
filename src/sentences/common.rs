@@ -1,7 +1,184 @@
 use crate::errors::apperrors::MiniSQLError;
 use std::collections::HashMap;
 
-pub fn analyze_condition(
+
+pub fn get_query(
+    condition: &[String],
+    start: usize,
+    end: usize,
+    indexes: &HashMap<String, usize>,
+    line: &[String],
+) -> Result<bool, MiniSQLError> {
+    if condition.is_empty() {
+        return Ok(true);
+    }
+    let scope = calculate_scope(condition, start, end)?;
+
+    // buscamos si tiene AND para dividir la condicion
+    let (had_and, value) = search_and(&scope, condition, start, end, indexes, line)?;
+    if had_and {
+        return Ok(value);
+    }
+
+    // buscamos si tiene OR para dividir la condicion
+    let (had_or, value) = search_or(&scope, condition, start, end, indexes, line)?;
+    if had_or {
+        return Ok(value);
+    }
+
+    let (was_unary, value) = resolve_unary_operation(condition, start, end, indexes, line)?;
+    if was_unary {
+        return Ok(value);
+    }
+
+    let broken_query_part = &condition[start..end];
+    Err(MiniSQLError::InvalidSyntax(format!(
+        "program was unable to parse query on condition: {} ",
+        broken_query_part.join(" ")
+    )))
+}
+
+fn calculate_scope(
+    condition: &[String],
+    start: usize,
+    end: usize,
+) -> Result<Vec<usize>, MiniSQLError> {
+    let mut scope: Vec<usize> = Vec::new();
+    let mut has_parenthesis = false;
+    let mut parenthesis_stack = 0;
+    for index in start..end {
+        if let Some(condition_part) = condition.get(index) {
+            if condition_part == "(" {
+                if !has_parenthesis {
+                    has_parenthesis = true;
+                    continue;
+                }
+                parenthesis_stack += 1;
+                continue;
+            } else if condition_part == ")" {
+                if !has_parenthesis {
+                    let broken_query_part = &condition[start..end];
+                    return Err(MiniSQLError::InvalidSyntax(format!(
+                        "invalid parenthesis combination: {} ",
+                        broken_query_part.join(" ")
+                    )));
+                }
+                if parenthesis_stack == 0 {
+                    has_parenthesis = false
+                } else {
+                    parenthesis_stack -= 1
+                }
+                continue;
+            } else {
+                if has_parenthesis {
+                    continue;
+                }
+                scope.push(index);
+            }
+        } else {
+            let broken_query_part = &condition[start..end];
+            return Err(MiniSQLError::InvalidSyntax(format!(
+                "program found unexpected error while searching for parenthesis: {} ",
+                broken_query_part.join(" ")
+            )));
+        }
+    }
+
+    Ok(scope)
+}
+
+fn search_and(
+    scope: &Vec<usize>,
+    condition: &[String],
+    start: usize,
+    end: usize,
+    indexes: &HashMap<String, usize>,
+    line: &[String],
+) -> Result<(bool, bool), MiniSQLError> {
+    let mut count = 0;
+    for &part_index in scope {
+        if let Some(part) = condition.get(part_index) {
+            if part == "AND" {
+                let right = get_query(condition, start, count, indexes, line)?;
+                let left = get_query(condition, count + 1, end, indexes, line)?;
+                return Ok((true, right && left));
+            }
+            count += 1;
+        } else {
+            let broken_query_part = &condition[start..end];
+            return Err(MiniSQLError::InvalidSyntax(format!(
+                "program found unexpected error while searching AND on query condition: {} ",
+                broken_query_part.join(" ")
+            )));
+        } // como siempre nos manejamos dentro del len no es necesario revisar esto
+    }
+
+    Ok((false, false))
+}
+
+fn search_or(
+    scope: &Vec<usize>,
+    condition: &[String],
+    start: usize,
+    end: usize,
+    indexes: &HashMap<String, usize>,
+    line: &[String],
+) -> Result<(bool, bool), MiniSQLError> {
+    let mut count = 0;
+    for &part_index in scope {
+        if let Some(part) = condition.get(part_index) {
+            if part == "OR" {
+                let right = get_query(condition, start, count, indexes, line)?;
+                let left = get_query(condition, count + 1, end, indexes, line)?;
+                return Ok((true, right || left));
+            }
+            count += 1;
+        } else {
+            let broken_query_part = &condition[start..end];
+            return Err(MiniSQLError::InvalidSyntax(format!(
+                "program found unexpected error while searching OR on query condition: {} ",
+                broken_query_part.join(" ")
+            )));
+        } // como siempre nos manejamos dentro del len no es necesario revisar esto
+    }
+    Ok((false, false))
+}
+
+fn resolve_unary_operation(
+    condition: &[String],
+    start: usize,
+    end: usize,
+    indexes: &HashMap<String, usize>,
+    line: &[String],
+) -> Result<(bool, bool), MiniSQLError> {
+    if let Some(part) = condition.get(start) {
+        if part == "NOT" {
+            Ok((true, !get_query(condition, start + 1, end, indexes, line)?))
+        } else if part == "(" {
+            if let Some(last) = condition.get(end) {
+                if last == ")" {
+                    return Ok((true, get_query(condition, start + 1, end, indexes, line)?));
+                } else {
+                    let broken_query_part = &condition[start..end];
+                    Err(MiniSQLError::InvalidSyntax(format!(
+                        "Invalid query, broken condition at: {} consider adding a ')'",
+                        broken_query_part.join(" ")
+                    )))
+                }
+            } else {
+                Ok((false, false))
+            } // no deberia ocurrir, pero levantamos false para que salte error
+        } else {
+            let value =
+                analyze_condition(condition, start, end - 1, indexes, line)?;
+            return Ok((true, value));
+        }
+    } else {
+        Ok((false, false))
+    } // no deberia ocurrir, pero levantamos false para que salte error
+}
+
+fn analyze_condition(
     condition: &[String],
     start: usize,
     end: usize,
@@ -157,6 +334,7 @@ fn get_cond_value(
         ))
     }
 }
+
 
 #[cfg(test)]
 mod test_unary {

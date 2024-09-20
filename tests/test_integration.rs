@@ -336,7 +336,7 @@ mod tests_select {
     }
 
     #[test]  
-    fn test_select_ordering_numeric_desc_2() {
+    fn test_select_ordering_numeric_desc() {
         let expected: Vec<&str> = vec![
             "109, rafael@email.com\n",  
             "105, andres@email.com\n", 

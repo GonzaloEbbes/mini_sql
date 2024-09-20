@@ -6,9 +6,9 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::vec;
 mod errors;
-pub mod sentences;
 use crate::errors::apperrors::MiniSQLError;
-
+pub mod sentences;
+pub mod file;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -78,20 +78,85 @@ fn standardize_sentence(sentence: String) -> Vec<String> {
     result
 }
 
-fn new_file_iterator(dir: &String, file_name: &String) -> Result<BufReader<File>, MiniSQLError> {
-    let route: String = format!("{}/{}{}", dir, file_name, ".csv");
-    let file = File::open(route);
-    match file {
-        Ok(file) => {
-            let reader = BufReader::new(file);
-            Ok(reader)
-        }
-        Err(_) => Err(MiniSQLError::InvalidTable(format!(
-            "Unable to open file at {}/{}",
-            dir, file_name
-        ))),
-    }
+
+fn get_headers(mut file_iter: BufReader<File>) -> (BufReader<File>, Vec<String>) {
+    let mut buffer: String = String::new();
+    let _ = file_iter.read_line(&mut buffer);
+    (file_iter, format_to_csv(buffer.replace("\n", "")))
 }
+
+fn format_to_csv(buffer: String) -> Vec<String> {
+    let vec: Vec<String> = buffer.split(",").map(|s| s.to_string()).collect();
+    vec
+}
+
+fn get_required_fields(
+    query_fields: &[String],
+    headers: &[String],
+) -> Result<HashMap<String, usize>, MiniSQLError> {
+    if query_fields.len() == 1 && query_fields[0] == "*" {
+        let all_fields: HashMap<String, usize> = add_all_fields(headers);
+        return Ok(all_fields);
+    }
+
+    let mut indexes: HashMap<String, usize> = HashMap::new();
+    for field in query_fields {
+        if field == "(" || field == ")" || field == "," {
+            continue;
+        }
+        let mut index = 0;
+        let mut found = false;
+        for csv_header in headers {
+            if field == csv_header {
+                indexes.insert(field.clone(), index);
+                found = true;
+                continue;
+            }
+            index += 1;
+        }
+        if !found {
+            return Err(MiniSQLError::InvalidColumn(format!(
+                "requested field [ {} ] could not be found",
+                field
+            )));
+        }
+    }
+
+    Ok(indexes)
+}
+
+fn add_all_fields(headers: &[String]) -> HashMap<String, usize> {
+    let mut indexes: HashMap<String, usize> = HashMap::new();
+    for (index, row) in headers.iter().enumerate() {
+        if index == headers.len()-1{
+            indexes.insert(row.to_string().replace("\n", ""), index);
+        }else{
+            indexes.insert(row.to_string(), index);
+        }
+    }
+
+    indexes
+}
+
+fn validate_table(mut from: Vec<String>) -> Result<String, MiniSQLError> {
+    let table = if let Some(first) = from.pop() {
+        first
+    } else {
+        return Err(MiniSQLError::InvalidTable(
+            "no table was given ".to_string(),
+        ));
+    };
+
+    if !from.is_empty() {
+        from.push(table);
+        return Err(MiniSQLError::InvalidTable(format!(
+            "multiple references for table: {} ",
+            from.join(" ")
+        )));
+    }
+    Ok(table)
+}
+
 
 /// Contains all requiered data to execute a SELECT statement give row values
 struct Select {
@@ -121,7 +186,7 @@ fn execute_select_statement(
     route: &String,
 ) -> Result<(), MiniSQLError> {
     let select = new_select(sententence_vec)?;
-    let file_iter = new_file_iterator(route, &select.target_table)?;
+    let file_iter = file::handler::new_file_iterator(route, &select.target_table)?;
 
     execute_select(&select, file_iter)?;
     Ok(())
@@ -249,64 +314,6 @@ fn execute_select(select: &Select, file_iter: BufReader<File>) -> Result<(), Min
     Ok(())
 }
 
-fn get_headers(mut file_iter: BufReader<File>) -> (BufReader<File>, Vec<String>) {
-    let mut buffer: String = String::new();
-    let _ = file_iter.read_line(&mut buffer);
-    (file_iter, format_to_csv(buffer.replace("\n", "")))
-}
-
-fn format_to_csv(buffer: String) -> Vec<String> {
-    let vec: Vec<String> = buffer.split(",").map(|s| s.to_string()).collect();
-    vec
-}
-
-fn get_required_fields(
-    query_fields: &[String],
-    headers: &[String],
-) -> Result<HashMap<String, usize>, MiniSQLError> {
-    if query_fields.len() == 1 && query_fields[0] == "*" {
-        let all_fields: HashMap<String, usize> = add_all_fields(headers);
-        return Ok(all_fields);
-    }
-
-    let mut indexes: HashMap<String, usize> = HashMap::new();
-    for field in query_fields {
-        if field == "(" || field == ")" || field == "," {
-            continue;
-        }
-        let mut index = 0;
-        let mut found = false;
-        for csv_header in headers {
-            if field == csv_header {
-                indexes.insert(field.clone(), index);
-                found = true;
-                continue;
-            }
-            index += 1;
-        }
-        if !found {
-            return Err(MiniSQLError::InvalidColumn(format!(
-                "requested field [ {} ] could not be found",
-                field
-            )));
-        }
-    }
-
-    Ok(indexes)
-}
-
-fn add_all_fields(headers: &[String]) -> HashMap<String, usize> {
-    let mut indexes: HashMap<String, usize> = HashMap::new();
-    for (index, row) in headers.iter().enumerate() {
-        if index == headers.len()-1{
-            indexes.insert(row.to_string().replace("\n", ""), index);
-        }else{
-            indexes.insert(row.to_string(), index);
-        }
-    }
-
-    indexes
-}
 
 fn apply_select_to_file(
     select: &Select,
@@ -318,7 +325,7 @@ fn apply_select_to_file(
     for result in file_iter.lines() {
         let record = result?;
         let line = format_to_csv(record);
-        let should_apply = get_query(
+        let should_apply = sentences::common::get_query(
             &select.condition,
             0,
             select.condition.len(),
@@ -348,182 +355,6 @@ fn print_selected_registers(response: Vec<Vec<String>>, requiered_fields: HashMa
         let joined_line = print_line.join(", ");
         println!("{}", joined_line);
     }
-}
-
-fn get_query(
-    condition: &[String],
-    start: usize,
-    end: usize,
-    indexes: &HashMap<String, usize>,
-    line: &[String],
-) -> Result<bool, MiniSQLError> {
-    if condition.is_empty() {
-        return Ok(true);
-    }
-    let scope = calculate_scope(condition, start, end)?;
-
-    // buscamos si tiene AND para dividir la condicion
-    let (had_and, value) = search_and(&scope, condition, start, end, indexes, line)?;
-    if had_and {
-        return Ok(value);
-    }
-
-    // buscamos si tiene OR para dividir la condicion
-    let (had_or, value) = search_or(&scope, condition, start, end, indexes, line)?;
-    if had_or {
-        return Ok(value);
-    }
-
-    let (was_unary, value) = resolve_unary_operation(condition, start, end, indexes, line)?;
-    if was_unary {
-        return Ok(value);
-    }
-
-    let broken_query_part = &condition[start..end];
-    Err(MiniSQLError::InvalidSyntax(format!(
-        "program was unable to parse query on condition: {} ",
-        broken_query_part.join(" ")
-    )))
-}
-
-fn calculate_scope(
-    condition: &[String],
-    start: usize,
-    end: usize,
-) -> Result<Vec<usize>, MiniSQLError> {
-    let mut scope: Vec<usize> = Vec::new();
-    let mut has_parenthesis = false;
-    let mut parenthesis_stack = 0;
-    for index in start..end {
-        if let Some(condition_part) = condition.get(index) {
-            if condition_part == "(" {
-                if !has_parenthesis {
-                    has_parenthesis = true;
-                    continue;
-                }
-                parenthesis_stack += 1;
-                continue;
-            } else if condition_part == ")" {
-                if !has_parenthesis {
-                    let broken_query_part = &condition[start..end];
-                    return Err(MiniSQLError::InvalidSyntax(format!(
-                        "invalid parenthesis combination: {} ",
-                        broken_query_part.join(" ")
-                    )));
-                }
-                if parenthesis_stack == 0 {
-                    has_parenthesis = false
-                } else {
-                    parenthesis_stack -= 1
-                }
-                continue;
-            } else {
-                if has_parenthesis {
-                    continue;
-                }
-                scope.push(index);
-            }
-        } else {
-            let broken_query_part = &condition[start..end];
-            return Err(MiniSQLError::InvalidSyntax(format!(
-                "program found unexpected error while searching for parenthesis: {} ",
-                broken_query_part.join(" ")
-            )));
-        }
-    }
-
-    Ok(scope)
-}
-
-fn search_and(
-    scope: &Vec<usize>,
-    condition: &[String],
-    start: usize,
-    end: usize,
-    indexes: &HashMap<String, usize>,
-    line: &[String],
-) -> Result<(bool, bool), MiniSQLError> {
-    let mut count = 0;
-    for &part_index in scope {
-        if let Some(part) = condition.get(part_index) {
-            if part == "AND" {
-                let right = get_query(condition, start, count, indexes, line)?;
-                let left = get_query(condition, count + 1, end, indexes, line)?;
-                return Ok((true, right && left));
-            }
-            count += 1;
-        } else {
-            let broken_query_part = &condition[start..end];
-            return Err(MiniSQLError::InvalidSyntax(format!(
-                "program found unexpected error while searching AND on query condition: {} ",
-                broken_query_part.join(" ")
-            )));
-        } // como siempre nos manejamos dentro del len no es necesario revisar esto
-    }
-
-    Ok((false, false))
-}
-
-fn search_or(
-    scope: &Vec<usize>,
-    condition: &[String],
-    start: usize,
-    end: usize,
-    indexes: &HashMap<String, usize>,
-    line: &[String],
-) -> Result<(bool, bool), MiniSQLError> {
-    let mut count = 0;
-    for &part_index in scope {
-        if let Some(part) = condition.get(part_index) {
-            if part == "OR" {
-                let right = get_query(condition, start, count, indexes, line)?;
-                let left = get_query(condition, count + 1, end, indexes, line)?;
-                return Ok((true, right || left));
-            }
-            count += 1;
-        } else {
-            let broken_query_part = &condition[start..end];
-            return Err(MiniSQLError::InvalidSyntax(format!(
-                "program found unexpected error while searching OR on query condition: {} ",
-                broken_query_part.join(" ")
-            )));
-        } // como siempre nos manejamos dentro del len no es necesario revisar esto
-    }
-    Ok((false, false))
-}
-
-fn resolve_unary_operation(
-    condition: &[String],
-    start: usize,
-    end: usize,
-    indexes: &HashMap<String, usize>,
-    line: &[String],
-) -> Result<(bool, bool), MiniSQLError> {
-    if let Some(part) = condition.get(start) {
-        if part == "NOT" {
-            Ok((true, !get_query(condition, start + 1, end, indexes, line)?))
-        } else if part == "(" {
-            if let Some(last) = condition.get(end) {
-                if last == ")" {
-                    return Ok((true, get_query(condition, start + 1, end, indexes, line)?));
-                } else {
-                    let broken_query_part = &condition[start..end];
-                    Err(MiniSQLError::InvalidSyntax(format!(
-                        "Invalid query, broken condition at: {} consider adding a ')'",
-                        broken_query_part.join(" ")
-                    )))
-                }
-            } else {
-                Ok((false, false))
-            } // no deberia ocurrir, pero levantamos false para que salte error
-        } else {
-            let value =
-                sentences::common::analyze_condition(condition, start, end - 1, indexes, line)?;
-            return Ok((true, value));
-        }
-    } else {
-        Ok((false, false))
-    } // no deberia ocurrir, pero levantamos false para que salte error
 }
 
 fn order_response(
@@ -674,7 +505,7 @@ fn execute_update_statement(
     route: &String,
 ) -> Result<(), MiniSQLError> {
     let update = new_update(sententence_vec)?;
-    let file_iter = new_file_iterator(route, &update.target_table)?;
+    let file_iter = file::handler::new_file_iterator(route, &update.target_table)?;
 
     execute_update(&update, file_iter, route)?;
     Ok(())
@@ -785,16 +616,16 @@ fn execute_update(
 ) -> Result<(), MiniSQLError> {
     let (file_iter, headers) = get_headers(file_iter);
     let mapped_fields = add_all_fields(&headers);
-    let (indexes_to_modify, values) = get_fields_to_upgrade(&sentence.fields, &mapped_fields)?;
+    let (indexes_to_modify, values) = get_fields_to_update(&sentence.fields, &mapped_fields)?;
 
-    let mut new_file = create_file(file_path, &sentence.target_table)?;
+    let mut new_file = file::handler::create_file(file_path, &sentence.target_table)?;
 
     let headers = headers.join(",").replace("\n", "");
     writeln!(new_file, "{}", headers)?;
     for result in file_iter.lines() {
         let record = result?;
         let mut line = format_to_csv(record);
-        let should_apply = get_query(
+        let should_apply = sentences::common::get_query(
             &sentence.condition,
             0,
             sentence.condition.len(),
@@ -807,11 +638,11 @@ fn execute_update(
         let csv_line = line.join(",").replace("\n", "");
         writeln!(new_file, "{}", csv_line)?;
     }
-    rename_file(file_path, &sentence.target_table)?;
+    file::handler::rename_file(file_path, &sentence.target_table)?;
     Ok(())
 }
 
-fn get_fields_to_upgrade(
+fn get_fields_to_update(
     fields: &[(String, String)],
     mapped_fields: &HashMap<String, usize>,
 ) -> Result<(Vec<usize>, Vec<String>), MiniSQLError> {
@@ -999,13 +830,13 @@ fn match_fields_insert(
 fn execute_insert(sentence: &Insert, route: &String) -> Result<(), MiniSQLError> {
     let headers: Vec<String>;
     {
-        let file = new_file_iterator(route, &sentence.target_table)?;
+        let file = file::handler::new_file_iterator(route, &sentence.target_table)?;
         let (_, headers_file) = get_headers(file);
         headers = headers_file
     };
 
     let mapped_fields = add_all_fields(&headers);
-    let mut new_file = create_file_append(route, &sentence.target_table)?;
+    let mut new_file = file::handler::create_file_append(route, &sentence.target_table)?;
     let indexes = get_required_fields(&sentence.fields, &headers)?;
 
     for line in &sentence.values {
@@ -1048,6 +879,8 @@ fn format_new_line(
     Ok(base_line)
 }
 
+
+
 struct Delete {
     target_table: String,
     condition: Vec<String>,
@@ -1066,7 +899,7 @@ fn execute_delete_statement(
     route: &String,
 ) -> Result<(), MiniSQLError> {
     let delete = new_delete(sententence_vec)?;
-    let file_iter = new_file_iterator(route, &delete.target_table)?;
+    let file_iter = file::handler::new_file_iterator(route, &delete.target_table)?;
 
     execute_delete(&delete, file_iter, route)?;
     Ok(())
@@ -1120,25 +953,6 @@ fn match_fields_delete(
     Ok((condition, from))
 }
 
-fn validate_table(mut from: Vec<String>) -> Result<String, MiniSQLError> {
-    let table = if let Some(first) = from.pop() {
-        first
-    } else {
-        return Err(MiniSQLError::InvalidTable(
-            "no table was given ".to_string(),
-        ));
-    };
-
-    if !from.is_empty() {
-        from.push(table);
-        return Err(MiniSQLError::InvalidTable(format!(
-            "multiple references for table: {} ",
-            from.join(" ")
-        )));
-    }
-    Ok(table)
-}
-
 fn execute_delete(
     sentence: &Delete,
     file_iter: BufReader<File>,
@@ -1146,14 +960,14 @@ fn execute_delete(
 ) -> Result<(), MiniSQLError> {
     let (file_iter, headers) = get_headers(file_iter);
     let mapped_fields = add_all_fields(&headers);
-    let mut new_file = create_file(file_path, &sentence.target_table)?;
+    let mut new_file = file::handler::create_file(file_path, &sentence.target_table)?;
 
     let headers = headers.join(",").replace("\n", "");
     writeln!(new_file, "{}", headers)?;
     for result in file_iter.lines() {
         let record = result?;
         let line = format_to_csv(record);
-        let should_apply = get_query(
+        let should_apply = sentences::common::get_query(
             &sentence.condition,
             0,
             sentence.condition.len(),
@@ -1165,44 +979,8 @@ fn execute_delete(
             writeln!(new_file, "{}", csv_line)?;
         }
     }
-    rename_file(file_path, &sentence.target_table)?;
+    file::handler::rename_file(file_path, &sentence.target_table)?;
 
     Ok(())
 }
 
-fn create_file(route: &String, name: &String) -> Result<File, MiniSQLError> {
-    let route: String = format!("{}/{}{}", route, name, ".temp");
-    let file = File::create(route);
-    match file {
-        Ok(file) => Ok(file),
-        Err(err) => Err(MiniSQLError::Generic(format!(
-            "there was a problem updating the table: {} ",
-            err
-        ))),
-    }
-}
-
-fn rename_file(route: &String, name: &String) -> Result<(), MiniSQLError> {
-    let previous_path: String = format!("{}/{}{}", route, name, ".temp");
-    let new_path: String = format!("{}/{}{}", route, name, ".csv");
-    let rename = fs::rename(previous_path, new_path);
-    match rename {
-        Ok(file) => Ok(file),
-        Err(err) => Err(MiniSQLError::Generic(format!(
-            "there was a problem appliying changes to the table: {} ",
-            err
-        ))),
-    }
-}
-
-fn create_file_append(route: &String, name: &String) -> Result<File, MiniSQLError> {
-    let route: String = format!("{}/{}{}", route, name, ".csv");
-    let file = File::options().append(true).open(route);
-    match file {
-        Ok(file) => Ok(file),
-        Err(err) => Err(MiniSQLError::Generic(format!(
-            "there was a problem inserting into the table: {} ",
-            err
-        ))),
-    }
-}

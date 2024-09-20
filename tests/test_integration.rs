@@ -126,7 +126,6 @@ mod tests_select {
         assert!(stderr.is_empty());
     }
 
-    /*
     #[test]  
     fn test_select_some_fields() {
         let expected: Vec<&str> = vec![
@@ -157,7 +156,6 @@ mod tests_select {
         assert_eq!(stdout,  expected.concat());
         assert!(stderr.is_empty());
     }
-    */
 
     #[test]  
     fn test_select_some_fields_where_and() {

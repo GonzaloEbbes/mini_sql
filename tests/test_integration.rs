@@ -956,8 +956,6 @@ mod test_insert {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
 
-        println!("{:?}", stderr);
-
         let expected: Vec<&str> = vec![
             "id_cliente,nombre,apellido,email,telefono\n", 
             "101,mario,hernandez,mario@email.com,5551234567\n", 
@@ -982,10 +980,6 @@ mod test_insert {
                 assert_eq!(false, true)
             }
         }
-
-        println!("{:?}", stderr);
-        println!("{:?}", stdout);
-
 
         match content {
             Err(_) => assert_eq!(false, true),

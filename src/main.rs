@@ -252,7 +252,7 @@ fn execute_select(select: &Select, file_iter: BufReader<File>) -> Result<(), Min
 fn get_headers(mut file_iter: BufReader<File>) -> (BufReader<File>, Vec<String>) {
     let mut buffer: String = String::new();
     let _ = file_iter.read_line(&mut buffer);
-    (file_iter, format_to_csv(buffer))
+    (file_iter, format_to_csv(buffer.replace("\n", "")))
 }
 
 fn format_to_csv(buffer: String) -> Vec<String> {

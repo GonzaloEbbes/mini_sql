@@ -239,7 +239,7 @@ fn validate_select_fields(
 
 fn execute_select(select: &Select, file_iter: BufReader<File>) -> Result<(), MiniSQLError> {
     let (file_iter, headers) = get_headers(file_iter);
-    let requiered_fields = get_requiered_fields(&select.mapped_fields, &headers)?;
+    let requiered_fields = get_required_fields(&select.mapped_fields, &headers)?;
     let mapped_fields = add_all_fields(&headers);
 
     let mut response = apply_select_to_file(select, file_iter, &mapped_fields)?;
@@ -260,7 +260,7 @@ fn format_to_csv(buffer: String) -> Vec<String> {
     vec
 }
 
-fn get_requiered_fields(
+fn get_required_fields(
     query_fields: &[String],
     headers: &[String],
 ) -> Result<HashMap<String, usize>, MiniSQLError> {
@@ -1006,7 +1006,7 @@ fn execute_insert(sentence: &Insert, route: &String) -> Result<(), MiniSQLError>
 
     let mapped_fields = add_all_fields(&headers);
     let mut new_file = create_file_append(route, &sentence.target_table)?;
-    let indexes = get_requiered_fields(&sentence.fields, &headers)?;
+    let indexes = get_required_fields(&sentence.fields, &headers)?;
 
     for line in &sentence.values {
         let formatted_line =

@@ -298,7 +298,11 @@ fn get_requiered_fields(
 fn add_all_fields(headers: &[String]) -> HashMap<String, usize> {
     let mut indexes: HashMap<String, usize> = HashMap::new();
     for (index, row) in headers.iter().enumerate() {
-        indexes.insert(row.to_string(), index);
+        if index == headers.len()-1{
+            indexes.insert(row.to_string().replace("\n", ""), index);
+        }else{
+            indexes.insert(row.to_string(), index);
+        }
     }
 
     indexes

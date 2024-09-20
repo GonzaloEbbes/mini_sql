@@ -537,8 +537,6 @@ mod test_update {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
 
-        println!("{:?}", stderr);
-
         let expected: Vec<&str> = vec![
             "id_cliente,nombre,apellido,email,telefono\n", 
             "101,mario,hernandez,mario@email.com,5551234567\n", 
@@ -601,7 +599,7 @@ mod test_update {
             "101,mario,hernandez,mario@email.com,5551234567\n", 
             "102,laura,ortega,laura@email.com,5559876543\n", 
             "103,javier,diaz,javier@email.com,5551122334\n", 
-            "104,carla,rivera,carla@email.com,123123123\n", 
+            "104,carla,rivera,carla@email.com,5556677889\n", 
             "105,andres,ruiz,andres@email.com,5552233445\n", 
             "106,pepe,garcia,lucia@email.com,5553344556\n", 
             "107,fernando,moreno,fernando@email.com,5554455667\n", 
@@ -808,7 +806,7 @@ mod test_delete {
             "101,mario,hernandez,mario@email.com,5551234567\n", 
             "102,laura,ortega,laura@email.com,5559876543\n", 
             "103,javier,diaz,javier@email.com,5551122334\n", 
-            "104,carla,rivera,carla@email.com,123123123\n", 
+            "104,carla,rivera,carla@email.com,5556677889\n", 
             "105,andres,ruiz,andres@email.com,5552233445\n", 
             "107,fernando,moreno,fernando@email.com,5554455667\n", 
             "108,sofia,gonzalez,sofia@email.com,5555566778\n", 
@@ -951,7 +949,7 @@ mod test_insert {
 
         let output = std::process::Command::new("./target/debug/mini_sql")
         .arg(format!("tests/temp-{}", clean_thread_id))
-        .arg("INSERT INTO clientes (id_cliente, nombre, apellido, email, telefono) VALUES (111, 'pepe', 'garcia', 'pepe@email.com', 5551234990) ")
+        .arg("INSERT INTO clientes (id_cliente, nombre, apellido, email, telefono ) VALUES (111, 'pepe', 'garcia', 'pepe@email.com', 5551234990) ")
         .output()
         .expect("Failed to execute command");
 
@@ -984,6 +982,10 @@ mod test_insert {
                 assert_eq!(false, true)
             }
         }
+
+        println!("{:?}", stderr);
+        println!("{:?}", stdout);
+
 
         match content {
             Err(_) => assert_eq!(false, true),

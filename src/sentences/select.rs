@@ -14,6 +14,8 @@ use std::collections::HashMap;
 /// For the ORDER BY functionality, it defaults to ASC if the sort type is not specified.
 /// If ORDER BY is not provided, the output will be in the order the data was read.
 /// 
+/// The retrieved registers will be printed through STDOUT
+/// 
 /// # Examples
 ///
 /// ```

@@ -4,9 +4,50 @@ use std::collections::HashMap;
 use crate::file;
 use std::io::Write;
 
+/// Executes a `INSERT` query with the provided SQL string.
+///
+/// This function encapsulates the entire lifecycle of a `INSERT`,
+/// including the creation, execution, and handling of the query.
+/// 
+/// Will append the registers to the table
+/// 
+/// # Examples
+///
+/// ```
+/// execute_insert_statement(["INSERT", "INTO", "clientes", "(", "nombre", ",", "apellido", ")", "VALUES", "(", "'pepe'", ",", "'garcia'", ")"], &"user/data/tables");
+/// execute_insert_statement(["INSERT", "INTO", "clientes", "(", "id_cliente", ",", "nombre", ",", "apellido", ",", "email", ",", "telefono", ")", "VALUES", "(", "111", ",", "'pepe'", ",", "'garcia'", ",", "'pepe@email.com'", ",", "5551234990", ")"], &"user/data/tables");
+/// execute_insert_statement(["INSERT", "INTO", "clientes", "(", "nombre", ",", "apellido", ")", "VALUES", "(", "'pepe'", ",", "'garcia'", ")",",", "(", "carlos", ",", "rodriguez", ")"], &"user/data/tables");
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error of type `MiniSQLError` if:
+///
+/// - The SQL string is invalid.
+/// - The provided table is invalid.
+/// - The query fails for any other reason.
+///
+/// # Returns
+///
+/// - `Ok(())` if the query executes successfully.
+/// - `Err(MiniSQLError)` if an error occurs during execution.
+///  
+pub fn execute_insert_statement(
+    sententence_vec: Vec<String>,
+    route: &String,
+) -> Result<(), MiniSQLError> {
+    let insert = new_insert(sententence_vec)?;
+    execute_insert(&insert, route)?;
+    Ok(())
+}
+
+/// Contains all requiered data to execute a INSERT statement given row values
 struct Insert {
+    /// INTO --> target_table
     target_table: String,
+    /// ( nombre , apellido ) --> fields; ["nombre", "apellido"]
     fields: Vec<String>,
+    /// VALUES ('pepe', 'garcia'), ('carlos', 'rodriguez') --> values ; as vector containing each new register as a vector of strings 
     values: Vec<Vec<String>>,
 }
 
@@ -18,15 +59,6 @@ struct FieldsToInsert {
 
 fn new_insert(sentence_parts: Vec<String>) -> Result<Insert, MiniSQLError> {
     decode_insert(sentence_parts)
-}
-
-pub fn execute_insert_statement(
-    sententence_vec: Vec<String>,
-    route: &String,
-) -> Result<(), MiniSQLError> {
-    let insert = new_insert(sententence_vec)?;
-    execute_insert(&insert, route)?;
-    Ok(())
 }
 
 fn decode_insert(sentence_parts: Vec<String>) -> Result<Insert, MiniSQLError> {

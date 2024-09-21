@@ -7,29 +7,29 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 
-/// Ejecuta una consulta `UPDATE` con la cadena SQL proporcionada.
+/// Executes an `UPDATE` query with the provided SQL string.
 ///
-/// Esta función encapsula todo el ciclo de vida de un `UPDATE`,
-/// incluyendo la creación, ejecución y manejo de la consulta.
+/// This function encapsulates the entire lifecycle of an `UPDATE`,
+/// including the creation, execution, and handling of the query.
 /// 
-/// # Ejemplos
+/// # Examples
 ///
 /// ```
 /// execute_update_statement(["UPDATE", "clientes", "SET", "email", "=", "'pepe@hotmail.com'", ",", "nombre", "=", "'pepe'", "WHERE", "id", ">", "108"], &"user/data/tables");
 /// ```
 ///
-/// # Errores
+/// # Errors
 ///
-/// Esta función retornará un error de tipo `MiniSQLError` si:
+/// This function will return an error of type `MiniSQLError` if:
 ///
-/// - La cadena SQL es inválida.
-/// - La tabla proporcionada es invalida.
-/// - La consulta falla por algún otro motivo.
+/// - The SQL string is invalid.
+/// - The provided table is invalid.
+/// - The query fails for any other reason.
 ///
-/// # Retornos
+/// # Returns
 ///
-/// - `Ok(())` si la consulta se ejecuta exitosamente.
-/// - `Err(MiniSQLError)` si ocurre un error durante la ejecución.
+/// - `Ok(())` if the query executes successfully.
+/// - `Err(MiniSQLError)` if an error occurs during execution.
 /// 
 pub fn execute_update_statement(
     sententence_vec: Vec<String>,
@@ -42,11 +42,16 @@ pub fn execute_update_statement(
     Ok(())
 }
 
+/// Contains all requiered data to execute a UPDATE statement given row values
 struct Update {
+    /// FROM --> target_table
     target_table: String,
+    /// SET edad = 5 --> fields = ["edad", "5"] 
     fields: Vec<(String, String)>,
+    /// WHERE --> condition ; as a vector of each part, id = 1 --> ["id", "=", "1"]
     condition: Vec<String>,
 }
+
 struct FieldsToUpdate {
     target_table: Vec<String>,
     fields: Vec<String>,

@@ -6,15 +6,15 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 
-/// Ejecuta una consulta `SELECT` con la cadena SQL proporcionada.
+/// Executes a `SELECT` query with the provided SQL string.
 ///
-/// Esta función encapsula todo el ciclo de vida de un `SELECT`,
-/// incluyendo la creación, ejecución y manejo de la consulta.
+/// This function encapsulates the entire lifecycle of a `SELECT`,
+/// including the creation, execution, and handling of the query.
 /// 
-/// Para la funcionalidad de ORDER BY se toma por defecto modo ASC si no se aclara el tipo de orden.
-/// De no enviarse ORDER BY la salida estara en el orden que se hayan leido los datos.
+/// For the ORDER BY functionality, it defaults to ASC if the sort type is not specified.
+/// If ORDER BY is not provided, the output will be in the order the data was read.
 /// 
-/// # Ejemplos
+/// # Examples
 ///
 /// ```
 /// execute_select_statement(["SELECT", "*", "FROM", "users"], &"user/data/tables");
@@ -22,18 +22,18 @@ use std::collections::HashMap;
 /// execute_select_statement(["SELECT", "*", "FROM", "users", "WHERE", "id", "=", "5", "ORDER", "BY", "nombre", "DESC"], &"user/data/tables");
 /// ```
 ///
-/// # Errores
+/// # Errors
 ///
-/// Esta función retornará un error de tipo `MiniSQLError` si:
+/// This function will return an error of type `MiniSQLError` if:
 ///
-/// - La cadena SQL es inválida.
-/// - La tabla proporcionada es invalida.
-/// - La consulta falla por algún otro motivo.
+/// - The SQL string is invalid.
+/// - The provided table is invalid.
+/// - The query fails for any other reason.
 ///
-/// # Retornos
+/// # Returns
 ///
-/// - `Ok(())` si la consulta se ejecuta exitosamente.
-/// - `Err(MiniSQLError)` si ocurre un error durante la ejecución.
+/// - `Ok(())` if the query executes successfully.
+/// - `Err(MiniSQLError)` if an error occurs during execution.
 /// 
 pub fn execute_select_statement(
     sententence_vec: Vec<String>,

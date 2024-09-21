@@ -6,7 +6,48 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 
-/// Contains all requiered data to execute a SELECT statement give row values
+/// Ejecuta una consulta `SELECT` con la cadena SQL proporcionada.
+///
+/// Esta función encapsula todo el ciclo de vida de un `SELECT`,
+/// incluyendo la creación, ejecución y manejo de la consulta.
+/// 
+/// Para la funcionalidad de ORDER BY se toma por defecto modo ASC si no se aclara el tipo de orden.
+/// De no enviarse ORDER BY la salida estara en el orden que se hayan leido los datos.
+/// 
+/// # Ejemplos
+///
+/// ```
+/// execute_select_statement(["SELECT", "*", "FROM", "users"], &"user/data/tables");
+/// execute_select_statement(["SELECT", "nombre", ",", "apellido", "FROM", "users", "WHERE", "id", "=", "5"], &"user/data/tables");
+/// execute_select_statement(["SELECT", "*", "FROM", "users", "WHERE", "id", "=", "5", "ORDER", "BY", "nombre", "DESC"], &"user/data/tables");
+/// ```
+///
+/// # Errores
+///
+/// Esta función retornará un error de tipo `MiniSQLError` si:
+///
+/// - La cadena SQL es inválida.
+/// - La tabla proporcionada es invalida.
+/// - La consulta falla por algún otro motivo.
+///
+/// # Retornos
+///
+/// - `Ok(())` si la consulta se ejecuta exitosamente.
+/// - `Err(MiniSQLError)` si ocurre un error durante la ejecución.
+/// 
+pub fn execute_select_statement(
+    sententence_vec: Vec<String>,
+    route: &String,
+) -> Result<(), MiniSQLError> {
+    let select = new_select(sententence_vec)?;
+    let file_iter = file::handler::new_file_iterator(route, &select.target_table)?;
+
+    execute_select(&select, file_iter)?;
+    Ok(())
+}
+
+
+/// Contains all requiered data to execute a SELECT statement given row values
 struct Select {
     /// FROM --> target_table
     target_table: String,
@@ -27,17 +68,6 @@ struct FieldsToSelect {
 
 fn new_select(sentence_parts: Vec<String>) -> Result<Select, MiniSQLError> {
     decode_select(sentence_parts)
-}
-
-pub fn execute_select_statement(
-    sententence_vec: Vec<String>,
-    route: &String,
-) -> Result<(), MiniSQLError> {
-    let select = new_select(sententence_vec)?;
-    let file_iter = file::handler::new_file_iterator(route, &select.target_table)?;
-
-    execute_select(&select, file_iter)?;
-    Ok(())
 }
 
 fn decode_select(sentence_parts: Vec<String>) -> Result<Select, MiniSQLError> {

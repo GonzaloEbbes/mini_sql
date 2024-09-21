@@ -7,6 +7,40 @@ use std::io::Write;
 use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 
+/// Ejecuta una consulta `UPDATE` con la cadena SQL proporcionada.
+///
+/// Esta función encapsula todo el ciclo de vida de un `UPDATE`,
+/// incluyendo la creación, ejecución y manejo de la consulta.
+/// 
+/// # Ejemplos
+///
+/// ```
+/// execute_update_statement(["UPDATE", "clientes", "SET", "email", "=", "'pepe@hotmail.com'", ",", "nombre", "=", "'pepe'", "WHERE", "id", ">", "108"], &"user/data/tables");
+/// ```
+///
+/// # Errores
+///
+/// Esta función retornará un error de tipo `MiniSQLError` si:
+///
+/// - La cadena SQL es inválida.
+/// - La tabla proporcionada es invalida.
+/// - La consulta falla por algún otro motivo.
+///
+/// # Retornos
+///
+/// - `Ok(())` si la consulta se ejecuta exitosamente.
+/// - `Err(MiniSQLError)` si ocurre un error durante la ejecución.
+/// 
+pub fn execute_update_statement(
+    sententence_vec: Vec<String>,
+    route: &String,
+) -> Result<(), MiniSQLError> {
+    let update = new_update(sententence_vec)?;
+    let file_iter = file::handler::new_file_iterator(route, &update.target_table)?;
+
+    execute_update(&update, file_iter, route)?;
+    Ok(())
+}
 
 struct Update {
     target_table: String,
@@ -21,17 +55,6 @@ struct FieldsToUpdate {
 
 fn new_update(sentence_parts: Vec<String>) -> Result<Update, MiniSQLError> {
     decode_update(sentence_parts)
-}
-
-pub fn execute_update_statement(
-    sententence_vec: Vec<String>,
-    route: &String,
-) -> Result<(), MiniSQLError> {
-    let update = new_update(sententence_vec)?;
-    let file_iter = file::handler::new_file_iterator(route, &update.target_table)?;
-
-    execute_update(&update, file_iter, route)?;
-    Ok(())
 }
 
 fn decode_update(sentence_parts: Vec<String>) -> Result<Update, MiniSQLError> {

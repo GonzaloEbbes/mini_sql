@@ -6,7 +6,7 @@ pub mod file;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    match get_args(&args) {
+    match get_args(args) {
         Ok((route, sentence)) => match execute_query(route.to_string(), sentence.to_string()) {
             Ok(()) => (),
             Err(error) => eprintln!("{}", error),
@@ -15,13 +15,19 @@ fn main() {
     }
 }
 
-fn get_args(args: &[String]) -> Result<(&String, &String), MiniSQLError> {
-    let arg1 = &args.get(1).ok_or_else(|| {
-        MiniSQLError::InvalidSyntax("Missing first parameter: path to dir.".to_string())
-    })?;
-    let arg2 = &args.get(2).ok_or_else(|| {
+
+fn get_args(mut args: Vec<String>) -> Result<(String, String), MiniSQLError> {
+    if args.len() > 2 {
+        return Err(MiniSQLError::InvalidSyntax("Too many arguments were sent.".to_string()))
+    }
+    let arg2 = args.pop().ok_or_else(|| {
         MiniSQLError::InvalidSyntax("Missing second parameter: SQL query.".to_string())
     })?;
+
+    let arg1 = args.pop().ok_or_else(|| {
+        MiniSQLError::InvalidSyntax("Missing first parameter: path to dir.".to_string())
+    })?;
+
     Ok((arg1, arg2))
 }
 

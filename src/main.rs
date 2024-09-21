@@ -17,9 +17,6 @@ fn main() {
 
 
 fn get_args(mut args: Vec<String>) -> Result<(String, String), MiniSQLError> {
-    if args.len() > 2 {
-        return Err(MiniSQLError::InvalidSyntax("Too many arguments were sent.".to_string()))
-    }
     let arg2 = args.pop().ok_or_else(|| {
         MiniSQLError::InvalidSyntax("Missing second parameter: SQL query.".to_string())
     })?;

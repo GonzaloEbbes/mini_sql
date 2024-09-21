@@ -2,6 +2,8 @@ use std::fs;
 use std::io::{self,  Write};
 
 const CLIENTES_DIR: &str = "data/tables/clientes.csv";
+const CLIENTES2_DIR: &str = "data/tables/clientes2.csv";
+const ORDENES_DIR: &str = "data/tables/ordenes.csv";
 fn duplicate_temp_file(original_path: &str,  new_path: &str, folder: &str, file: &str) -> io::Result<()> {
     fs::create_dir(format!("{}/{}", new_path, folder))?;
     let content = fs::read(original_path)?;
@@ -359,10 +361,56 @@ mod tests_select {
         assert_eq!(stdout,  expected.concat());
         assert!(stderr.is_empty());
     }
+
+    #[test]  
+    fn test_select_example_1() {
+        let expected: Vec<&str> = vec![
+            "102, 2, Teléfono\n",
+            "105, 4, Mouse\n",
+            "110, 6, Teléfono\n"
+        ]; 
+
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT id, producto, id_cliente FROM ordenes WHERE cantidad > 1;")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
+
+    #[test]  
+    fn test_select_example_2() {
+        let expected: Vec<&str> = vec![
+            "5, José, jose.lopez@email.com\n",
+            "2, Ana, ana.lopez@email.com\n"
+        ]; 
+
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT id, nombre, email FROM clientes2 WHERE apellido = 'López' ORDER BY email DESC;")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
+
 }
 
 mod test_update {
-    use crate::{delete_file, duplicate_temp_file, CLIENTES_DIR};
+    use crate::{delete_file, duplicate_temp_file, CLIENTES_DIR, CLIENTES2_DIR};
 
     #[test]
     fn test_update_missing_table() {
@@ -626,6 +674,59 @@ mod test_update {
         }
     }
 
+    #[test]
+    fn test_update_example_3(){
+        let thread_id = std::thread::current().id();
+        let thread_id_str = format!("{:?}", thread_id);
+        let clean_thread_id = thread_id_str.replace("ThreadId(", "").replace(")", "");
+        let mut ok = duplicate_temp_file(CLIENTES2_DIR, "tests",&format!("temp-{}", clean_thread_id), "clientes2.csv");
+        match ok {
+            Ok(_) => (),
+            Err(_) => {
+                println!("FAIL: Could not duplicate file\n");
+                assert_eq!(false, true)
+            }
+        }
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg(format!("tests/temp-{}", clean_thread_id))
+        .arg("UPDATE clientes2 SET email = 'mrodriguez@hotmail.com' WHERE id = 4")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        let expected: Vec<&str> = vec![
+            "id,nombre,apellido,email\n",
+            "1,Juan,Pérez,juan.perez@email.com\n",
+            "2,Ana,López,ana.lopez@email.com\n",
+            "3,Carlos,Gómez,carlos.gomez@email.com\n",
+            "4,María,Rodríguez,mrodriguez@hotmail.com\n",
+            "5,José,López,jose.lopez@email.com\n",
+            "6,Laura,Fernández,laura.fernandez@email.com\n"
+        ]; 
+
+        let content = std::fs::read(format!("tests/temp-{}/clientes2.csv", clean_thread_id));
+        ok = delete_file(&format!("tests/temp-{}", clean_thread_id));
+        match ok {
+            Ok(_) => (),
+            Err(_) => {
+                println!("FAIL: Could not delete file\n");
+                assert_eq!(false, true)
+            }
+        }
+
+        match content {
+            Err(_) => assert_eq!(false, true),
+            Ok(content) => {
+                assert!(stderr.is_empty());
+                assert!(stdout.is_empty());
+                assert_eq!(String::from_utf8_lossy(&content), expected.concat())
+            }
+        }
+    }
+
 }
 
 mod test_delete {
@@ -835,7 +936,7 @@ mod test_delete {
 }
 
 mod test_insert {
-    use crate::{delete_file, duplicate_temp_file, CLIENTES_DIR};
+    use crate::{delete_file, duplicate_temp_file, CLIENTES_DIR, ORDENES_DIR};
 
     #[test]
     fn test_insert_missing_table() {
@@ -893,8 +994,6 @@ mod test_insert {
 
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
-
-        println!("{:?}", stderr);
 
         let expected: Vec<&str> = vec![
             "id_cliente,nombre,apellido,email,telefono\n", 
@@ -989,7 +1088,6 @@ mod test_insert {
         }
     }
 
-
     #[test]
     fn test_double_insert(){
         let thread_id = std::thread::current().id();
@@ -1013,8 +1111,6 @@ mod test_insert {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
 
-        println!("{:?}", stderr);
-
         let expected: Vec<&str> = vec![
             "id_cliente,nombre,apellido,email,telefono\n", 
             "101,mario,hernandez,mario@email.com,5551234567\n", 
@@ -1032,6 +1128,64 @@ mod test_insert {
         ]; 
 
         let content = std::fs::read(format!("tests/temp-{}/clientes.csv", clean_thread_id));
+        ok = delete_file(&format!("tests/temp-{}", clean_thread_id));
+        match ok {
+            Ok(_) => (),
+            Err(_) => {
+                println!("FAIL: Could not delete file\n");
+                assert_eq!(false, true)
+            }
+        }
+
+        match content {
+            Err(_) => assert_eq!(false, true),
+            Ok(content) => {
+                assert!(stderr.is_empty());
+                assert!(stdout.is_empty());
+                assert_eq!(String::from_utf8_lossy(&content), expected.concat())
+            }
+        }
+    }
+
+    #[test]
+    fn test_insert_example_4(){
+        let thread_id = std::thread::current().id();
+        let thread_id_str = format!("{:?}", thread_id);
+        let clean_thread_id = thread_id_str.replace("ThreadId(", "").replace(")", "");
+        let mut ok = duplicate_temp_file(ORDENES_DIR, "tests",&format!("temp-{}", clean_thread_id), "ordenes.csv");
+        match ok {
+            Ok(_) => (),
+            Err(_) => {
+                println!("FAIL: Could not duplicate file\n");
+                assert_eq!(false, true)
+            }
+        }
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg(format!("tests/temp-{}", clean_thread_id))
+        .arg("INSERT INTO ordenes (id, id_cliente, producto, cantidad) VALUES (111, 6, 'Laptop', 3);")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        let expected: Vec<&str> = vec![ 
+            "id,id_cliente,producto,cantidad\n",
+            "101,1,Laptop,1\n",
+            "103,1,Monitor,1\n",
+            "102,2,Teléfono,2\n",
+            "104,3,Teclado,1\n",
+            "105,4,Mouse,2\n",
+            "106,5,Impresora,1\n",
+            "107,6,Altavoces,1\n",
+            "108,4,Auriculares,1\n",
+            "109,5,Laptop,1\n",
+            "110,6,Teléfono,2\n",
+            "111,6,Laptop,3\n",
+        ]; 
+
+        let content = std::fs::read(format!("tests/temp-{}/ordenes.csv", clean_thread_id));
         ok = delete_file(&format!("tests/temp-{}", clean_thread_id));
         match ok {
             Ok(_) => (),

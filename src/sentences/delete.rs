@@ -6,20 +6,30 @@ use std::fs::File;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
 
-
-struct Delete {
-    target_table: String,
-    condition: Vec<String>,
-}
-
-fn new_delete(sentence_parts: Vec<String>) -> Result<Delete, MiniSQLError> {
-    let (condition, table) = decode_delete(sentence_parts)?;
-    Ok(Delete {
-        target_table: table,
-        condition,
-    })
-}
-
+/// Executes a `DELETE` query with the provided SQL string.
+///
+/// This function encapsulates the entire lifecycle of a `DELETE`,
+/// including the creation, execution, and handling of the query.
+/// 
+/// # Examples
+///
+/// ```
+/// execute_delete_statement(["DELETE", "FROM", "clientes", "WHERE", "id_cliente", "=", "107"], &"user/data/tables");
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error of type `MiniSQLError` if:
+///
+/// - The SQL string is invalid.
+/// - The provided table is invalid.
+/// - The query fails for any other reason.
+///
+/// # Returns
+///
+/// - `Ok(())` if the query executes successfully.
+/// - `Err(MiniSQLError)` if an error occurs during execution.
+/// 
 pub fn execute_delete_statement(
     sententence_vec: Vec<String>,
     route: &String,
@@ -29,6 +39,22 @@ pub fn execute_delete_statement(
 
     execute_delete(&delete, file_iter, route)?;
     Ok(())
+}
+
+/// Contains all requiered data to execute a DELETE statement given row values
+struct Delete {
+    /// FROM --> target_table
+    target_table: String,
+    /// WHERE --> condition ; as a vector of each part, id = 1 --> ["id", "=", "1"]
+    condition: Vec<String>,
+}
+
+fn new_delete(sentence_parts: Vec<String>) -> Result<Delete, MiniSQLError> {
+    let (condition, table) = decode_delete(sentence_parts)?;
+    Ok(Delete {
+        target_table: table,
+        condition,
+    })
 }
 
 fn decode_delete(sentence_parts: Vec<String>) -> Result<(Vec<String>, String), MiniSQLError> {

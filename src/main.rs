@@ -49,8 +49,6 @@ fn execute_query(route: String, sentence: String) -> Result<(), MiniSQLError> {
 
 fn standardize_sentence(sentence: String) -> Vec<String> {
     let sentence_vec: Vec<String> = sentence
-        .replace("\n", " ")
-        .replace(",", " , ")
         .split("'")
         .map(|s| s.to_string())
         .collect();
@@ -58,15 +56,27 @@ fn standardize_sentence(sentence: String) -> Vec<String> {
 
     for (i, part) in sentence_vec.iter().enumerate() {
         if i % 2 == 0 {
-            let replaced: Vec<String> = part
-                .replace("(", " ( ")
-                .replace(")", " ) ")
-                .replace(";", " ")
-                .replace("\t", " ")
+            let mut modified_part = String::new();
+            
+            for c in part.chars() {
+                match c {
+                    '(' | ')' | ',' => {
+                        modified_part.push(' ');
+                        modified_part.push(c);
+                        modified_part.push(' ');
+                    },
+                    ';' | '\n' | '\t' => modified_part.push(' '),
+                    _ => modified_part.push(c),
+                }
+            }
+
+            let replaced: Vec<String> = modified_part
                 .split_ascii_whitespace()
                 .map(|s| s.to_string())
                 .collect();
+
             result.extend(replaced);
+
         } else {
             result.push(part.to_string());
         }

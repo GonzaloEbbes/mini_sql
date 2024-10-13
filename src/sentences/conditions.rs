@@ -489,12 +489,23 @@ mod test_get_query {
         indexes.insert("dni".to_string(), 3);
 
 
-        let should_apply = get_query(&condition, 0, condition.len(), &indexes, &line);
+        let mut should_apply = get_query(&condition, 0, condition.len(), &indexes, &line);
         match should_apply {
             Ok(should_apply) => {
                 assert_eq!(should_apply, true);
             },
             Err(_) => (),
         }
+
+        let line_str= "5,carlos,45,123123123";
+        let line:Vec<String> = line_str.split_whitespace().map(String::from).collect();
+        should_apply = get_query(&condition, 0, condition.len(), &indexes, &line);
+        match should_apply {
+            Ok(should_apply) => {
+                assert_eq!(should_apply, false);
+            },
+            Err(_) => (),
+        }
+
     }
 }

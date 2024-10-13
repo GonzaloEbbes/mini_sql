@@ -1,6 +1,6 @@
-use crate::errors::apperrors::MiniSQLError;
-use super::common::{get_headers, add_all_fields, validate_table, format_to_csv};
+use super::common::{add_all_fields, format_to_csv, get_headers, validate_table};
 use super::conditions::get_query;
+use crate::errors::apperrors::MiniSQLError;
 use crate::file;
 use std::fs::File;
 use std::io::Write;
@@ -10,7 +10,7 @@ use std::io::{BufRead, BufReader};
 ///
 /// This function encapsulates the entire lifecycle of a `DELETE`,
 /// including the creation, execution, and handling of the query.
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -29,7 +29,7 @@ use std::io::{BufRead, BufReader};
 ///
 /// - `Ok(())` if the query executes successfully.
 /// - `Err(MiniSQLError)` if an error occurs during execution.
-/// 
+///
 pub fn execute_delete_statement(
     sententence_vec: Vec<String>,
     route: &String,
@@ -135,4 +135,3 @@ fn execute_delete(
 
     Ok(())
 }
-

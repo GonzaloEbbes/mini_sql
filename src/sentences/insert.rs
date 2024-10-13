@@ -1,16 +1,16 @@
+use super::common::{add_all_fields, get_headers, get_required_fields, validate_table};
 use crate::errors::apperrors::MiniSQLError;
-use super::common::{get_headers, add_all_fields, validate_table, get_required_fields};
-use std::collections::HashMap;
 use crate::file;
+use std::collections::HashMap;
 use std::io::Write;
 
 /// Executes a `INSERT` query with the provided SQL string.
 ///
 /// This function encapsulates the entire lifecycle of a `INSERT`,
 /// including the creation, execution, and handling of the query.
-/// 
+///
 /// Will append the registers to the table
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -47,7 +47,7 @@ struct Insert {
     target_table: String,
     /// ( nombre , apellido ) --> fields; ["nombre", "apellido"]
     fields: Vec<String>,
-    /// VALUES ('pepe', 'garcia'), ('carlos', 'rodriguez') --> values ; as vector containing each new register as a vector of strings 
+    /// VALUES ('pepe', 'garcia'), ('carlos', 'rodriguez') --> values ; as vector containing each new register as a vector of strings
     values: Vec<Vec<String>>,
 }
 
@@ -218,4 +218,3 @@ fn format_new_line(
     }
     Ok(base_line)
 }
-

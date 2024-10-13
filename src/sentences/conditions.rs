@@ -95,15 +95,13 @@ fn search_and(
     indexes: &HashMap<String, usize>,
     line: &[String],
 ) -> Result<(bool, bool), MiniSQLError> {
-    let mut count = 0;
     for &part_index in scope {
         if let Some(part) = condition.get(part_index) {
             if part == "AND" {
-                let right = get_query(condition, start, count, indexes, line)?;
-                let left = get_query(condition, count + 1, end, indexes, line)?;
+                let right = get_query(condition, start, part_index, indexes, line)?;
+                let left = get_query(condition, part_index + 1, end, indexes, line)?;
                 return Ok((true, right && left));
             }
-            count += 1;
         } else {
             let broken_query_part = &condition[start..end];
             return Err(MiniSQLError::InvalidSyntax(format!(
@@ -477,5 +475,26 @@ mod test_get_query {
     use super::*;
 
     #[test]
-    fn test_get_query_parenthesis(){}
+    fn test_get_query_parenthesis(){
+        let condition_str= "( ( id = 5 ) AND nombre = 'pepe' OR edad = 23 ) AND edad = 5";
+        let condition:Vec<String> = condition_str.split_whitespace().map(String::from).collect();
+
+        let line_str= "5,pepe,45,123123123";
+        let line:Vec<String> = line_str.split_whitespace().map(String::from).collect();
+
+        let mut indexes: HashMap<String, usize> = HashMap::new();
+        indexes.insert("id".to_string(), 0);
+        indexes.insert("nombre".to_string(), 1);
+        indexes.insert("edad".to_string(), 2);
+        indexes.insert("dni".to_string(), 3);
+
+
+        let should_apply = get_query(&condition, 0, condition.len(), &indexes, &line);
+        match should_apply {
+            Ok(should_apply) => {
+                assert_eq!(should_apply, true);
+            },
+            Err(_) => (),
+        }
+    }
 }

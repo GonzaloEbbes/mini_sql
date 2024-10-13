@@ -366,7 +366,9 @@ mod tests_select {
     fn test_select_example_1() {
         let expected: Vec<&str> = vec![
             "102, 2, Teléfono\n",
+            "104, 3, Teclado\n",
             "105, 4, Mouse\n",
+            "107, 6, Altavoces\n",
             "110, 6, Teléfono\n"
         ]; 
 
@@ -407,6 +409,32 @@ mod tests_select {
         assert!(stderr.is_empty());
     }
 
+    #[test]  
+    fn test_select_mutiple_conditions() {
+        let expected: Vec<&str> = vec![
+            "104, 3, Teclado, 1\n",
+            "104, 3, Teclado, 4\n",
+            "107, 6, Altavoces, 1\n",
+            "110, 6, Teléfono, 2\n"
+
+        ]; 
+
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT * FROM ordenes WHERE id_cliente = 6 AND cantidad <= 2 OR id_cliente = 3")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        println!(" {:?} ",stderr);
+        println!("{:?}",stdout);
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
 }
 
 mod test_update {
@@ -1176,9 +1204,11 @@ mod test_insert {
             "103,1,Monitor,1\n",
             "102,2,Teléfono,2\n",
             "104,3,Teclado,1\n",
+            "104,3,Teclado,4\n",
             "105,4,Mouse,2\n",
             "106,5,Impresora,1\n",
             "107,6,Altavoces,1\n",
+            "107,6,Altavoces,4\n",
             "108,4,Auriculares,1\n",
             "109,5,Laptop,1\n",
             "110,6,Teléfono,2\n",

@@ -14,15 +14,15 @@ pub fn get_query(
     }
     let scope = calculate_scope(condition, start, end)?;
 
-    // buscamos si tiene AND para dividir la condicion
-    let (had_and, value) = search_and(&scope, condition, start, end, indexes, line)?;
-    if had_and {
-        return Ok(value);
-    }
-
     // buscamos si tiene OR para dividir la condicion
     let (had_or, value) = search_or(&scope, condition, start, end, indexes, line)?;
     if had_or {
+        return Ok(value);
+    }
+
+    // buscamos si tiene AND para dividir la condicion
+    let (had_and, value) = search_and(&scope, condition, start, end, indexes, line)?;
+    if had_and {
         return Ok(value);
     }
 
@@ -124,7 +124,7 @@ fn search_or(
     indexes: &HashMap<String, usize>,
     line: &[String],
 ) -> Result<(bool, bool), MiniSQLError> {
-    let mut count = 0;
+    let mut count = start;
     for &part_index in scope {
         if let Some(part) = condition.get(part_index) {
             if part == "OR" {

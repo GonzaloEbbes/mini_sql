@@ -4,6 +4,7 @@ use std::io::{self,  Write};
 const CLIENTES_DIR: &str = "data/tables/clientes.csv";
 const CLIENTES2_DIR: &str = "data/tables/clientes2.csv";
 const ORDENES_DIR: &str = "data/tables/ordenes.csv";
+const PERSONAS_DIR: &str = "data/tables/personas.csv";
 fn duplicate_temp_file(original_path: &str,  new_path: &str, folder: &str, file: &str) -> io::Result<()> {
     fs::create_dir(format!("{}/{}", new_path, folder))?;
     let content = fs::read(original_path)?;
@@ -429,8 +430,49 @@ mod tests_select {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let stderr = String::from_utf8_lossy(&output.stderr);
 
-        println!(" {:?} ",stderr);
-        println!("{:?}",stdout);
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
+
+    #[test]  
+    fn test_select_mutiple_conditions_2() {
+        let expected: Vec<&str> = vec![
+            "1, Ingeniería, 71, 72, Introducción a la Ingeniería, 4\n",
+            "2, Física, 71, 74, Física Aplicada I, 5\n",
+            "3, Matemática, 65, 76, Álgebra Lineal, 6\n",
+            "5, Bioquímica, 80, 77, Bioquímica Avanzada, 7\n"
+        ]; 
+
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT * FROM materias WHERE NOT nombre = 'Desarrollo' AND departamento = 71 OR codigo > 75")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        
+        assert_eq!(stdout,  expected.concat());
+        assert!(stderr.is_empty());
+    }
+
+    #[test]  
+    fn test_select_parenthesis(){
+        let expected: Vec<&str> = vec![ 
+            "103, javier, diaz, javier@email.com, 5551122334\n", 
+            "109, rafael, diaz, rafael@email.com, 5556677881\n"
+        ]; 
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg("data/tables")
+        .arg("SELECT * FROM clientes WHERE apellido = 'diaz' AND ( id_cliente < 105 OR id_cliente = 109 )")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
         
         assert_eq!(stdout,  expected.concat());
         assert!(stderr.is_empty());
@@ -964,7 +1006,7 @@ mod test_delete {
 }
 
 mod test_insert {
-    use crate::{delete_file, duplicate_temp_file, CLIENTES_DIR, ORDENES_DIR};
+    use crate::{delete_file, duplicate_temp_file, CLIENTES_DIR, ORDENES_DIR, PERSONAS_DIR};
 
     #[test]
     fn test_insert_missing_table() {
@@ -1216,6 +1258,57 @@ mod test_insert {
         ]; 
 
         let content = std::fs::read(format!("tests/temp-{}/ordenes.csv", clean_thread_id));
+        ok = delete_file(&format!("tests/temp-{}", clean_thread_id));
+        match ok {
+            Ok(_) => (),
+            Err(_) => {
+                println!("FAIL: Could not delete file\n");
+                assert_eq!(false, true)
+            }
+        }
+
+        match content {
+            Err(_) => assert_eq!(false, true),
+            Ok(content) => {
+                assert!(stderr.is_empty());
+                assert!(stdout.is_empty());
+                assert_eq!(String::from_utf8_lossy(&content), expected.concat())
+            }
+        }
+    }
+
+    #[test]
+    fn test_insert_missing_fields(){
+        let thread_id = std::thread::current().id();
+        let thread_id_str = format!("{:?}", thread_id);
+        let clean_thread_id = thread_id_str.replace("ThreadId(", "").replace(")", "");
+        let mut ok = duplicate_temp_file(PERSONAS_DIR, "tests",&format!("temp-{}", clean_thread_id), "personas.csv");
+        match ok {
+            Ok(_) => (),
+            Err(_) => {
+                println!("FAIL: Could not duplicate file\n");
+                assert_eq!(false, true)
+            }
+        }
+
+        let output = std::process::Command::new("./target/debug/mini_sql")
+        .arg(format!("tests/temp-{}", clean_thread_id))
+        .arg("INSERT INTO personas (Nombre, Correo_electrónico) VALUES ('julian', 'julian@gmail.com');")
+        .output()
+        .expect("Failed to execute command");
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        let expected: Vec<&str> = vec![
+            "id_persona,Nombre,Correo_electrónico,telefono,direccion\n",
+            "1,carlos,carlos@gmail.com,1122334455,Calle Falsa 123\n",
+            "2,ana,ana@gmail.com,1122335566,Calle Real 456\n",
+            "3,martin,martin@hotmail.com,1133445566,Avenida Siempre Viva 789\n",
+            ",julian,julian@gmail.com,,\n"
+        ]; 
+
+        let content = std::fs::read(format!("tests/temp-{}/personas.csv", clean_thread_id));
         ok = delete_file(&format!("tests/temp-{}", clean_thread_id));
         match ok {
             Ok(_) => (),

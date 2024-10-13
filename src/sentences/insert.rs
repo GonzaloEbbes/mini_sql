@@ -155,7 +155,7 @@ fn match_fields_insert(
             \n. {} were requiered but sent {} ",
                 value.join(" "),
                 fields.len(),
-                value.len()
+                values.len()
             );
             return Err(MiniSQLError::InvalidSyntax(message));
         }

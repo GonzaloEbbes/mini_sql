@@ -1,0 +1,6 @@
+id_materia,nombre,departamento,codigo,descripcion,creditos
+1,Ingeniería,71,72,Introducción a la Ingeniería,4
+2,Física,71,74,Física Aplicada I,5
+3,Matemática,65,76,Álgebra Lineal,6
+4,Desarrollo,71,70,Desarrollo de Software,6
+5,Bioquímica,80,77,Bioquímica Avanzada,7

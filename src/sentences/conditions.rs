@@ -155,9 +155,9 @@ fn resolve_unary_operation(
         if part == "NOT" {
             Ok((true, !get_query(condition, start + 1, end, indexes, line)?))
         } else if part == "(" {
-            if let Some(last) = condition.get(end) {
+            if let Some(last) = condition.get(end-1) {
                 if last == ")" {
-                    return Ok((true, get_query(condition, start + 1, end, indexes, line)?));
+                    return Ok((true, get_query(condition, start + 1, end - 1, indexes, line)?));
                 } else {
                     let broken_query_part = &condition[start..end];
                     Err(MiniSQLError::InvalidSyntax(format!(
@@ -470,4 +470,12 @@ mod test_binary {
         let result = execute_binary_condition(&condition, 0, 2, &line, &indexes);
         assert_eq!(result, Ok(true));
     }
+}
+
+#[cfg(test)]
+mod test_get_query {
+    use super::*;
+
+    #[test]
+    fn test_get_query_parenthesis(){}
 }

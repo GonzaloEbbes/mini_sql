@@ -1,17 +1,17 @@
-use crate::errors::apperrors::MiniSQLError;
-use super::common::{get_headers, add_all_fields, validate_table, format_to_csv};
+use super::common::{add_all_fields, format_to_csv, get_headers, validate_table};
 use super::conditions::get_query;
+use crate::errors::apperrors::MiniSQLError;
 use crate::file;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::io::{BufRead, BufReader};
-use std::collections::HashMap;
 
 /// Executes an `UPDATE` query with the provided SQL string.
 ///
 /// This function encapsulates the entire lifecycle of an `UPDATE`,
 /// including the creation, execution, and handling of the query.
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -30,7 +30,7 @@ use std::collections::HashMap;
 ///
 /// - `Ok(())` if the query executes successfully.
 /// - `Err(MiniSQLError)` if an error occurs during execution.
-/// 
+///
 pub fn execute_update_statement(
     sententence_vec: Vec<String>,
     route: &String,
@@ -46,7 +46,7 @@ pub fn execute_update_statement(
 struct Update {
     /// FROM --> target_table
     target_table: String,
-    /// SET edad = 5 --> fields = ["edad", "5"] 
+    /// SET edad = 5 --> fields = ["edad", "5"]
     fields: Vec<(String, String)>,
     /// WHERE --> condition ; as a vector of each part, id = 1 --> ["id", "=", "1"]
     condition: Vec<String>,

@@ -3,8 +3,10 @@ use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 
-
-pub fn new_file_iterator(dir: &String, file_name: &String) -> Result<BufReader<File>, MiniSQLError> {
+pub fn new_file_iterator(
+    dir: &String,
+    file_name: &String,
+) -> Result<BufReader<File>, MiniSQLError> {
     let route: String = format!("{}/{}{}", dir, file_name, ".csv");
     let file = File::open(route);
     match file {
@@ -18,7 +20,6 @@ pub fn new_file_iterator(dir: &String, file_name: &String) -> Result<BufReader<F
         ))),
     }
 }
-
 
 pub fn create_file(route: &String, name: &String) -> Result<File, MiniSQLError> {
     let route: String = format!("{}/{}{}", route, name, ".temp");

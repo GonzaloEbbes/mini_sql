@@ -1,8 +1,8 @@
 use std::env;
 mod errors;
 use crate::errors::apperrors::MiniSQLError;
-pub mod sentences;
 pub mod file;
+pub mod sentences;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -14,7 +14,6 @@ fn main() {
         Err(error) => eprintln!("{}", error),
     }
 }
-
 
 fn get_args(mut args: Vec<String>) -> Result<(String, String), MiniSQLError> {
     let arg2 = args.pop().ok_or_else(|| {
@@ -48,23 +47,20 @@ fn execute_query(route: String, sentence: String) -> Result<(), MiniSQLError> {
 }
 
 fn standardize_sentence(sentence: String) -> Vec<String> {
-    let sentence_vec: Vec<String> = sentence
-        .split("'")
-        .map(|s| s.to_string())
-        .collect();
+    let sentence_vec: Vec<String> = sentence.split("'").map(|s| s.to_string()).collect();
     let mut result: Vec<String> = Vec::new();
 
     for (i, part) in sentence_vec.iter().enumerate() {
         if i % 2 == 0 {
             let mut modified_part = String::new();
-            
+
             for c in part.chars() {
                 match c {
                     '(' | ')' | ',' => {
                         modified_part.push(' ');
                         modified_part.push(c);
                         modified_part.push(' ');
-                    },
+                    }
                     ';' | '\n' | '\t' => modified_part.push(' '),
                     _ => modified_part.push(c),
                 }
@@ -76,7 +72,6 @@ fn standardize_sentence(sentence: String) -> Vec<String> {
                 .collect();
 
             result.extend(replaced);
-
         } else {
             result.push(part.to_string());
         }
@@ -84,4 +79,3 @@ fn standardize_sentence(sentence: String) -> Vec<String> {
 
     result
 }
-

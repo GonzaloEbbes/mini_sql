@@ -1,7 +1,6 @@
 use crate::errors::apperrors::MiniSQLError;
 use std::collections::HashMap;
 
-
 pub fn get_query(
     condition: &[String],
     start: usize,
@@ -14,15 +13,15 @@ pub fn get_query(
     }
     let scope = calculate_scope(condition, start, end)?;
 
-    // buscamos si tiene AND para dividir la condicion
-    let (had_and, value) = search_and(&scope, condition, start, end, indexes, line)?;
-    if had_and {
-        return Ok(value);
-    }
-
     // buscamos si tiene OR para dividir la condicion
     let (had_or, value) = search_or(&scope, condition, start, end, indexes, line)?;
     if had_or {
+        return Ok(value);
+    }
+
+    // buscamos si tiene AND para dividir la condicion
+    let (had_and, value) = search_and(&scope, condition, start, end, indexes, line)?;
+    if had_and {
         return Ok(value);
     }
 
@@ -95,15 +94,13 @@ fn search_and(
     indexes: &HashMap<String, usize>,
     line: &[String],
 ) -> Result<(bool, bool), MiniSQLError> {
-    let mut count = 0;
     for &part_index in scope {
         if let Some(part) = condition.get(part_index) {
             if part == "AND" {
-                let right = get_query(condition, start, count, indexes, line)?;
-                let left = get_query(condition, count + 1, end, indexes, line)?;
+                let right = get_query(condition, start, part_index, indexes, line)?;
+                let left = get_query(condition, part_index + 1, end, indexes, line)?;
                 return Ok((true, right && left));
             }
-            count += 1;
         } else {
             let broken_query_part = &condition[start..end];
             return Err(MiniSQLError::InvalidSyntax(format!(
@@ -124,7 +121,7 @@ fn search_or(
     indexes: &HashMap<String, usize>,
     line: &[String],
 ) -> Result<(bool, bool), MiniSQLError> {
-    let mut count = 0;
+    let mut count = start;
     for &part_index in scope {
         if let Some(part) = condition.get(part_index) {
             if part == "OR" {
@@ -155,9 +152,12 @@ fn resolve_unary_operation(
         if part == "NOT" {
             Ok((true, !get_query(condition, start + 1, end, indexes, line)?))
         } else if part == "(" {
-            if let Some(last) = condition.get(end) {
+            if let Some(last) = condition.get(end - 1) {
                 if last == ")" {
-                    return Ok((true, get_query(condition, start + 1, end, indexes, line)?));
+                    return Ok((
+                        true,
+                        get_query(condition, start + 1, end - 1, indexes, line)?,
+                    ));
                 } else {
                     let broken_query_part = &condition[start..end];
                     Err(MiniSQLError::InvalidSyntax(format!(
@@ -169,8 +169,7 @@ fn resolve_unary_operation(
                 Ok((false, false))
             } // no deberia ocurrir, pero levantamos false para que salte error
         } else {
-            let value =
-                analyze_condition(condition, start, end - 1, indexes, line)?;
+            let value = analyze_condition(condition, start, end - 1, indexes, line)?;
             return Ok((true, value));
         }
     } else {
@@ -335,7 +334,6 @@ fn get_cond_value(
     }
 }
 
-
 #[cfg(test)]
 mod test_unary {
     use super::*;
@@ -469,5 +467,43 @@ mod test_binary {
         ];
         let result = execute_binary_condition(&condition, 0, 2, &line, &indexes);
         assert_eq!(result, Ok(true));
+    }
+}
+
+#[cfg(test)]
+mod test_get_query {
+    use super::*;
+
+    #[test]
+    fn test_get_query_parenthesis() {
+        let condition_str = "( ( id = 5 ) AND nombre = 'pepe' OR edad = 23 ) AND edad = 5";
+        let condition: Vec<String> = condition_str.split_whitespace().map(String::from).collect();
+
+        let line_str = "5,pepe,45,123123123";
+        let line: Vec<String> = line_str.split_whitespace().map(String::from).collect();
+
+        let mut indexes: HashMap<String, usize> = HashMap::new();
+        indexes.insert("id".to_string(), 0);
+        indexes.insert("nombre".to_string(), 1);
+        indexes.insert("edad".to_string(), 2);
+        indexes.insert("dni".to_string(), 3);
+
+        let mut should_apply = get_query(&condition, 0, condition.len(), &indexes, &line);
+        match should_apply {
+            Ok(should_apply) => {
+                assert_eq!(should_apply, true);
+            }
+            Err(_) => (),
+        }
+
+        let line_str = "5,carlos,45,123123123";
+        let line: Vec<String> = line_str.split_whitespace().map(String::from).collect();
+        should_apply = get_query(&condition, 0, condition.len(), &indexes, &line);
+        match should_apply {
+            Ok(should_apply) => {
+                assert_eq!(should_apply, false);
+            }
+            Err(_) => (),
+        }
     }
 }

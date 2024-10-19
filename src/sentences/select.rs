@@ -1,21 +1,21 @@
-use crate::errors::apperrors::MiniSQLError;
-use super::common::{get_headers, add_all_fields, format_to_csv, get_required_fields};
+use super::common::{add_all_fields, format_to_csv, get_headers, get_required_fields};
 use super::conditions::get_query;
+use crate::errors::apperrors::MiniSQLError;
 use crate::file;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::collections::HashMap;
 
 /// Executes a `SELECT` query with the provided SQL string.
 ///
 /// This function encapsulates the entire lifecycle of a `SELECT`,
 /// including the creation, execution, and handling of the query.
-/// 
+///
 /// For the ORDER BY functionality, it defaults to ASC if the sort type is not specified.
 /// If ORDER BY is not provided, the output will be in the order the data was read.
-/// 
+///
 /// The retrieved registers will be printed through STDOUT
-/// 
+///
 /// # Examples
 ///
 /// ```
@@ -36,7 +36,7 @@ use std::collections::HashMap;
 ///
 /// - `Ok(())` if the query executes successfully.
 /// - `Err(MiniSQLError)` if an error occurs during execution.
-/// 
+///
 pub fn execute_select_statement(
     sententence_vec: Vec<String>,
     route: &String,
@@ -47,7 +47,6 @@ pub fn execute_select_statement(
     execute_select(&select, file_iter)?;
     Ok(())
 }
-
 
 /// Contains all requiered data to execute a SELECT statement given row values
 struct Select {
@@ -193,7 +192,6 @@ fn execute_select(select: &Select, file_iter: BufReader<File>) -> Result<(), Min
 
     Ok(())
 }
-
 
 fn apply_select_to_file(
     select: &Select,
@@ -364,4 +362,3 @@ fn order_literal(
     });
     response
 }
-

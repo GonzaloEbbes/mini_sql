@@ -1,9 +1,7 @@
 use crate::errors::apperrors::MiniSQLError;
-use std::fs::File;
 use std::collections::HashMap;
+use std::fs::File;
 use std::io::{BufRead, BufReader};
-
-
 
 pub fn get_headers(mut file_iter: BufReader<File>) -> (BufReader<File>, Vec<String>) {
     let mut buffer: String = String::new();
@@ -54,9 +52,9 @@ pub fn get_required_fields(
 pub fn add_all_fields(headers: &[String]) -> HashMap<String, usize> {
     let mut indexes: HashMap<String, usize> = HashMap::new();
     for (index, row) in headers.iter().enumerate() {
-        if index == headers.len()-1{
+        if index == headers.len() - 1 {
             indexes.insert(row.to_string().replace("\n", ""), index);
-        }else{
+        } else {
             indexes.insert(row.to_string(), index);
         }
     }
